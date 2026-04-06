@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"bufio"
+	"io"
 )
 
 func main(){
@@ -21,8 +23,8 @@ func main(){
 		fmt.Println("Failed to create a listerner : ",err)
 		os.Exit(1)
 	}
-	defer listerner.Close()
-	fmt.Println("Listening on %s%s",listener.Addr(),port)
+	defer listener.Close()
+	fmt.Printf("Listening on %s\n",listener.Addr())
 
 	for {
 		conn , err := listener.Accept()
@@ -36,6 +38,25 @@ func main(){
 }
 
 func handleConnection(conn net.Conn){
-	defer conn.close()
+	defer conn.Close()
 
+	reader := bufio.NewReader(conn)
+	for {
+		data , err := reader.ReadBytes('\n')
+	if err != nil {
+		if err != io.EOF {
+			fmt.Println("failed to read data, err : ",err)
+			}
+		return
+		}
+	fmt.Printf("Request : %s", data)
+	line := fmt.Sprintf("ECHO : %s", data) // data type is converted from byte to string
+	fmt.Printf("Response : %s",line)
+
+	_ , write_err := conn.Write([]byte(line)) // This converts the string(line) into its UTF-8 byte representation.
+	if write_err != nil {
+		fmt.Println("failed to write data, err: ",write_err)
+		return
+		}
+	}
 }
