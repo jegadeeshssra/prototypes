@@ -1,0 +1,51 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"product-api/handlers"
+	"syscall"
+	"time"
+)
+
+func main() {
+	log_object := log.New(os.Stdout, "Product-API:v1 - ", log.LstdFlags)
+
+	productHandler := handlers.NewProductsHandler(log_object)
+
+	mux := http.NewServeMux()
+
+	mux.Handle("/products", productHandler)
+
+	server := &http.Server{
+		Addr:         ":8090",
+		Handler:      mux,
+		IdleTimeout:  120 * time.Second,
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 1 * time.Second,
+	}
+
+	go func() {
+		err := server.ListenAndServe()
+		if err != nil {
+			log_object.Printf("Error starting server: %s\n", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Create buffered channel to receive signals
+	sigChan := make(chan os.Signal, 1)
+	// Register to receive SIGINT and SIGTERM
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	log_object.Println("Waiting for any SIG...")
+	// Block until signal received
+	sig := <-sigChan
+	log_object.Println("Got Signals : ", sig)
+
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	server.Shutdown(ctx)
+}
