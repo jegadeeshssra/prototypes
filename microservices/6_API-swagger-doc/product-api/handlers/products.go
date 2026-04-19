@@ -24,6 +24,11 @@ type Products struct {
 	l *log.Logger
 }
 
+// Create a new instance of Products which is a handler(contains ServerHTTP)
+func NewProductsHandler(l *log.Logger) *Products {
+	return &Products{l}
+}
+
 // A list of products returns in the response
 // swagger:response productsResponse
 type productsResponseWrapper struct {
@@ -32,7 +37,14 @@ type productsResponseWrapper struct {
 	Body []data.Product
 }
 
-// Create a new instance of Products which is a handler(contains ServerHTTP)
-func NewProductsHandler(l *log.Logger) *Products {
-	return &Products{l}
+// swagger:response noContent
+type productsNoContent struct {
+}
+
+// swagger:parameters deleteProduct
+type productIDParameterWrapper struct {
+	// The id of the product to delete from the database
+	// in: path
+	// required: true
+	ID int `json:"id"`
 }

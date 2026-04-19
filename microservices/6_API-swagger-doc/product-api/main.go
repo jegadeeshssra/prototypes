@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
 )
 
@@ -30,6 +31,15 @@ func main() {
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/products/", productHandler.AddProduct)
 	postRouter.Use(productHandler.Middleware)
+
+	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
+	deleteRouter.HandleFunc("/products/{id:[0-9]+}", productHandler.DeleteProduct)
+
+	// for serving documentation using Redoc
+	options := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
+	docsHandler := middleware.Redoc(options, nil)
+	getRouter.Handle("/docs", docsHandler)
+	getRouter.Handle("/swagger.yaml", http.FileServer(http.Dir("./")))
 
 	server := &http.Server{
 		Addr:         ":8090",

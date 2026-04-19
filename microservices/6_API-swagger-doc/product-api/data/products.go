@@ -11,7 +11,12 @@ import (
 )
 
 // Product defines the structure for an API product
+// swagger:model	
 type Product struct {
+	// the id for this user
+	//
+	// required: true
+	// min: 1
 	ID          int     `json:"id"`
 	Name        string  `json:"name" validate:"required"`
 	Description string  `json:"description"`
@@ -26,7 +31,7 @@ type Product struct {
 func (p *Product) FromJSON(reqBody io.Reader) error {
 	d := json.NewDecoder(reqBody)
 	return d.Decode(p) // Reads the JSON data from the request body. Looks at the JSON keys in the incoming data. Matches them with the struct fields using the json:"..." tags. Automatically fills (populates) the matching fields in your Product struct. Returns an error if the JSON is invalid or types don't match.
-}	
+}
 
 // Custom validation function for "sku" parameter
 func validateSKU(fl validator.FieldLevel) bool {
@@ -98,6 +103,17 @@ func UpdateProduct(id int, p *Product) error {
 	}
 	p.ID = id // replace the default value of 0
 	productList[i] = p
+
+	return nil
+}
+
+func DeleteProduct(id int) error {
+	i, _, err := FindProduct((id))
+	if err != nil {
+		return err
+	}
+	// ... (variadic expansion) Expands slice into elements: append([A, B], D, E) -> [A, B, D, E]
+	productList = append(productList[:i], productList[i+1:]...)
 
 	return nil
 }
