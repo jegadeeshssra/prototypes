@@ -23,11 +23,12 @@ func main() {
 
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
 	getRouter.HandleFunc("/products/", productHandler.GetProducts)
+	getRouter.HandleFunc("/products/{id:[0-9]+}", productHandler.GetSingleProduct)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
 	putRouter.HandleFunc("/products/{id:[0-9]+}", productHandler.UpdateProduct)
 	putRouter.Use(productHandler.Middleware)
-
+	
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
 	postRouter.HandleFunc("/products/", productHandler.AddProduct)
 	postRouter.Use(productHandler.Middleware)

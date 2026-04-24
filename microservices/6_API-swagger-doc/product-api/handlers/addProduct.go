@@ -5,6 +5,14 @@ import (
 	"product-api/data"
 )
 
+// swagger:route POST /products products createProduct
+// Create a new product
+//
+// responses:
+//	200: productResponse
+//  X - 422: errorValidation
+//  X - 501: errorResponse
+
 func (p *Products) AddProduct(res http.ResponseWriter, req *http.Request) {
 	// getting the deserialized from json to the data.Product{}
 	// temp - interface which contains the Product type values

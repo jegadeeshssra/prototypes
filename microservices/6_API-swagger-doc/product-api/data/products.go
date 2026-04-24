@@ -11,7 +11,7 @@ import (
 )
 
 // Product defines the structure for an API product
-// swagger:model	
+// swagger:model
 type Product struct {
 	// the id for this user
 	//
@@ -31,6 +31,11 @@ type Product struct {
 func (p *Product) FromJSON(reqBody io.Reader) error {
 	d := json.NewDecoder(reqBody)
 	return d.Decode(p) // Reads the JSON data from the request body. Looks at the JSON keys in the incoming data. Matches them with the struct fields using the json:"..." tags. Automatically fills (populates) the matching fields in your Product struct. Returns an error if the JSON is invalid or types don't match.
+}
+
+func (p *Product) ToJson(id int, w io.Writer) error {
+	e := json.NewEncoder((w))
+	return e.Encode(p)
 }
 
 // Custom validation function for "sku" parameter
@@ -54,6 +59,16 @@ func (p *Product) Validate() error {
 	validate := validator.New()
 	validate.RegisterValidation("sku", validateSKU)
 	return validate.Struct(p)
+}
+
+// Created a separate Class with methods for this type []*Products
+// every listOfProduct instance will contain this method ToJSON
+// whoever have this type will have this method
+type Products []*Product
+
+func (p *Products) ToJSON(w io.Writer) error {
+	e := json.NewEncoder(w)
+	return e.Encode(p)
 }
 
 // productList is slice(dynamic) of type ptr(Product struct type) containing ptrs to individual product
@@ -86,6 +101,14 @@ func generateID() int {
 
 func GetProducts() Products {
 	return productList
+}
+
+func GetSingleProduct(id int) (*Product, error) {
+	_, product, err := FindProduct((id))
+	if err != nil {
+		return nil, err
+	}
+	return product, nil
 }
 
 func AddProduct(p *Product) {
@@ -125,14 +148,4 @@ func FindProduct(id int) (int, *Product, error) {
 		}
 	}
 	return -1, nil, ErrProductNotFound
-}
-
-// Created a separate Class with methods for this type []*Products
-// every listOfProduct instance will contain this method ToJSON
-// whoever have this type will have this method
-type Products []*Product
-
-func (p *Products) ToJSON(w io.Writer) error {
-	e := json.NewEncoder(w)
-	return e.Encode(p)
 }
