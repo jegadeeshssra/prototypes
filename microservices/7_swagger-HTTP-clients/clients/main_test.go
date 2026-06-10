@@ -26,5 +26,5 @@ func TestOurClient(t *testing.T) {
 	}
 
 	fmt.Printf("%#v", prod.GetPayload()[0])
-	t.Log("Success: received products")
+	t.Log("Success: received products")	
 }
