@@ -61,6 +61,13 @@ func GzipCompression(data string) ([]byte, error) {
 
 }
 
+func ClosePersistentConnection(conn net.Conn) bool {
+	data := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\n")
+	_ = WritePersistentTCPResponse(conn, data)
+	defer conn.Close()
+	return true
+}
+
 func WriteTCPResponse(conn net.Conn, data string) bool {
 	defer conn.Close()
 	_, err := conn.Write([]byte(data))

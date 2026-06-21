@@ -22,7 +22,7 @@ func router(conn net.Conn, requeststr string) bool {
 		} else if strings.HasPrefix(cleanPath, "/user-agent") {
 			return methods.UserAgentHeader(conn, requeststr)
 		} else if connHead, _ := server.ConnectionHeader(requeststr); connHead == "close" {
-			defer conn.Close()
+			return server.ClosePersistentConnection(conn)
 		}
 	}
 	data := "HTTP/1.1 404 Not Found\r\n\r\n"
@@ -34,51 +34,19 @@ func handleConnection(conn net.Conn) {
 
 	for {
 		bufLen, _ := conn.Read(buf)
+		if bufLen > 0 {
+			requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
+			_ = router(conn, requeststr)
+		}
 		if bufLen <= 0 {
 			break
 		}
-		requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
-
-		_ = router(conn, requeststr)
-
-		// connHeader, err := server.ConnectionHeader(requeststr)
-		// if err != nil {
-		// 	conn.Close()
-		// 	return
-		// }
-		// if connHeader == "Closed" {
-		// 	conn.Close()
-		// }
 	}
 
 	defer conn.Close()
-	// lines := strings.Split(requeststr, "\r\n")
-	// parts := strings.Split(lines[0], " ")
-	// method := strings.TrimSpace(parts[0])
-
-	// // // Not needed for this task
-	// if method == "GET" {
-	// 	path := server.GetURLPath(requeststr)
-	// 	if strings.HasPrefix(path, "/files") {
-	// 		methods.RetrieveFiles(conn, requeststr)
-	// 	}
-	// 	return
-	// } else if method == "POST" {
-	// 	methods.ReadWriteRequestBody(conn, requeststr)
-	// 	return
-	// }
 }
 
-// func HandleConnection(conn net.Conn){{
-// 	buf := make([]byte,4096)
-// 	bufLen , _ := conn.Read(buf)
-// 	requestStr := buf[:bufLen]
-
-// }}
-
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	// fmt.Println("Logs from your program will appear here!")
 
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
@@ -89,7 +57,7 @@ func main() {
 	defer l.Close()
 
 	for {
-		conn, err := l.Accept()
+		conn, err := l.Accept() // A net.Conn object representing the established TCP connection
 		if err != nil {
 			fmt.Println("Error accepting connection: ", err.Error())
 			continue
