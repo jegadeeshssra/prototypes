@@ -39,7 +39,7 @@ func ConnectionHeader(request string) (string, error) {
 			return value, nil
 		}
 	}
-	return "", nil
+	return "", fmt.Errorf("No Connection Header")
 }
 
 func GetAcceptEncoding(request string) []string {

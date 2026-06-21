@@ -21,6 +21,8 @@ func router(conn net.Conn, requeststr string) bool {
 			return methods.EchoPathStr(conn, cleanPath)
 		} else if strings.HasPrefix(cleanPath, "/user-agent") {
 			return methods.UserAgentHeader(conn, requeststr)
+		} else if connHead, _ := server.ConnectionHeader(requeststr); connHead == "close" {
+			defer conn.Close()
 		}
 	}
 	data := "HTTP/1.1 404 Not Found\r\n\r\n"
