@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"net"
+	"strings"
 )
 
 func StatusCode_200(conn net.Conn, message string) {
@@ -69,6 +70,56 @@ func WriteTCPResponse(conn net.Conn, data string) bool {
 	}
 	fmt.Println("\n----------------------")
 	return true
+}
+
+func WritePersistentTCPResponse(conn net.Conn, data string) bool {
+	fmt.Println("data - ", data)
+	_, err := conn.Write([]byte(data))
+	if err != nil {
+		fmt.Println("Error Writing data to the accepted connection ", err.Error())
+		return false
+	}
+	fmt.Println("\n----------------------")
+	return true
+}
+
+func GzipResponse(conn net.Conn, requeststr string) {
+	lines := strings.Split(requeststr, "\r\n")
+	fmt.Println("----------------------")
+	fmt.Println(lines)
+	techniques := GetAcceptEncoding(requeststr)
+	fmt.Println("techniques - ", techniques)
+	if techniques != nil {
+		for _, each := range techniques {
+			technique := strings.TrimSpace(each)
+			// fmt.Printf("each: %q\n", each) // To know exactly whats in the each and technique
+			// fmt.Printf("technique: %q\n", technique)
+			if technique == "gzip" {
+
+				// get the str from PATH
+				url := GetURLPath(requeststr)
+				str := strings.TrimPrefix(url, "/echo/")
+				// Gzip the str
+				compressed_data, err := GzipCompression(str)
+				if err != nil {
+					fmt.Println("Cannot Compress the data using Gzip - ", err)
+					return
+				}
+
+				data := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n", technique, len(compressed_data))
+				var buf bytes.Buffer  // Used dynamic buffer
+				buf.WriteString(data) // to write string and binary
+				buf.Write(compressed_data)
+				fmt.Printf("% X", buf.Bytes()) // To display in hexadecimal
+
+				WriteBinaryTCPResponse(conn, buf.Bytes())
+				return
+			}
+		}
+	} else {
+		StatusCode_200(conn, "")
+		return
+	}
 }
 
 func WriteBinaryTCPResponse(conn net.Conn, data []byte) bool {

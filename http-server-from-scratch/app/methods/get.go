@@ -5,11 +5,34 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/server"
 )
 
 var dirPath string = "C:\\Users\\018046\\OneDrive - Sify Technologies Limited\\go\\prototypes\\codecrafters-http-server-go\\files\\"
+
+func EchoPathStr(conn net.Conn, cleanPath string) bool {
+	str := strings.TrimPrefix(cleanPath, "/echo/")
+	if len(str) <= 0 {
+		data := "HTTP/1.1 404 String Not Found\r\n\r\n"
+		return server.WritePersistentTCPResponse(conn, data)
+	}
+	data := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(str), str)
+	return server.WritePersistentTCPResponse(conn, data)
+}
+
+func UserAgentHeader(conn net.Conn, requeststr string) bool {
+	time.Sleep(5 * time.Second)
+	headerContent, err := server.GetUserAgent(requeststr)
+	if err != nil {
+		fmt.Println(err)
+		data := "HTTP/1.1 404 Header string Not Found\r\n\r\n"
+		return server.WritePersistentTCPResponse(conn, data)
+	}
+	data := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(headerContent), headerContent)
+	return server.WritePersistentTCPResponse(conn, data)
+}
 
 func FileExists(fullPath string) bool {
 	_, err := os.Stat(fullPath)

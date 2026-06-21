@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -11,62 +10,69 @@ import (
 	"github.com/codecrafters-io/http-server-starter-go/app/server"
 )
 
-func handleConnection(conn net.Conn) {
-	buf := make([]byte, 1024) // makes a byte array of 1024 bytes
-	bufLen, _ := conn.Read(buf)
-	requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
-
+func router(conn net.Conn, requeststr string) bool {
 	lines := strings.Split(requeststr, "\r\n")
-	fmt.Println("----------------------")
 	parts := strings.Split(lines[0], " ")
 	method := strings.TrimSpace(parts[0])
-
-	techniques := server.GetAcceptEncoding(requeststr)
-	fmt.Println("techniques - ", techniques)
-	if techniques != nil {
-		for _, each := range techniques {
-			technique := strings.TrimSpace(each)
-			// fmt.Printf("each: %q\n", each) // To know exactly whats in the each and technique
-			// fmt.Printf("technique: %q\n", technique)
-			if technique == "gzip" {
-
-				// get the str from PATH
-				url := server.GetURLPath(requeststr)
-				str := strings.TrimPrefix(url, "/echo/")
-				// Gzip the str
-				compressed_data, err := server.GzipCompression(str)
-				if err != nil {
-					fmt.Println("Cannot Compress the data using Gzip - ", err)
-					return
-				}
-
-				data := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\nContent-Length: %d\r\n\r\n", technique, len(compressed_data))
-				var buf bytes.Buffer  // Used dynamic buffer
-				buf.WriteString(data) // to write string and binary
-				buf.Write(compressed_data)
-				fmt.Printf("% X", buf.Bytes()) // To display in hexadecimal
-
-				server.WriteBinaryTCPResponse(conn, buf.Bytes())
-				return
-			}
-		}
-	} else {
-		server.StatusCode_200(conn, "")
-		return
-	}
-
-	// Not needed for this task
+	path := server.GetURLPath(requeststr)
 	if method == "GET" {
-		path := server.GetURLPath(requeststr)
-		if strings.HasPrefix(path, "/files") {
-			methods.RetrieveFiles(conn, requeststr)
+		cleanPath := strings.TrimSpace(path)
+		if strings.HasPrefix(cleanPath, "/echo/") {
+			return methods.EchoPathStr(conn, cleanPath)
+		} else if strings.HasPrefix(cleanPath, "/user-agent") {
+			return methods.UserAgentHeader(conn, requeststr)
 		}
-		return
-	} else if method == "POST" {
-		methods.ReadWriteRequestBody(conn, requeststr)
-		return
 	}
+	data := "HTTP/1.1 404 Not Found\r\n\r\n"
+	return server.WritePersistentTCPResponse(conn, data)
 }
+
+func handleConnection(conn net.Conn) {
+	buf := make([]byte, 1024) // makes a byte array of 1024 bytes
+
+	for {
+		bufLen, _ := conn.Read(buf)
+		if bufLen <= 0 {
+			break
+		}
+		requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
+
+		_ = router(conn, requeststr)
+
+		// connHeader, err := server.ConnectionHeader(requeststr)
+		// if err != nil {
+		// 	conn.Close()
+		// 	return
+		// }
+		// if connHeader == "Closed" {
+		// 	conn.Close()
+		// }
+	}
+
+	defer conn.Close()
+	// lines := strings.Split(requeststr, "\r\n")
+	// parts := strings.Split(lines[0], " ")
+	// method := strings.TrimSpace(parts[0])
+
+	// // // Not needed for this task
+	// if method == "GET" {
+	// 	path := server.GetURLPath(requeststr)
+	// 	if strings.HasPrefix(path, "/files") {
+	// 		methods.RetrieveFiles(conn, requeststr)
+	// 	}
+	// 	return
+	// } else if method == "POST" {
+	// 	methods.ReadWriteRequestBody(conn, requeststr)
+	// 	return
+	// }
+}
+
+// func HandleConnection(conn net.Conn){{
+// 	buf := make([]byte,4096)
+// 	bufLen , _ := conn.Read(buf)
+// 	requestStr := buf[:bufLen]
+
+// }}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
