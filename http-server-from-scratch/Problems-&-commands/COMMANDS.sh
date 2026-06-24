@@ -7,3 +7,10 @@
 Start-Job -ScriptBlock { curl -v http://127.0.0.1:4221 }
 Start-Job -ScriptBlock { curl -v http://127.0.0.1:4221 }
 Start-Job -ScriptBlock { curl -v http://127.0.0.1:4221 }
+
+
+
+- v7 commit
+curl.exe -i --http1.1  http://localhost:4221/echo/banana 
+    \ --next http://localhost:4221/user-agent -H "User-Agent: blueberry/apple-blueberry" 
+    \ --next http://localhost:4221/ -H "Connection: close"

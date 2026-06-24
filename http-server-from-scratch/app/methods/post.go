@@ -46,9 +46,8 @@ func ReadWriteRequestBody(conn net.Conn, requestStr string) {
 					return
 				}
 			}
-		} 
+		}
 	}
 	fmt.Println("\n\nRequest does not contain Content-Length: Header")
-	server.StatusCode_404(conn,"")
-	return
+	server.StatusCode_404(conn, "")
 }

@@ -15,9 +15,13 @@ func router(conn net.Conn, requeststr string) bool {
 	parts := strings.Split(lines[0], " ")
 	method := strings.TrimSpace(parts[0])
 	path := server.GetURLPath(requeststr)
+	//fmt.Println(requeststr)
 	if method == "GET" {
 		cleanPath := strings.TrimSpace(path)
-		if strings.HasPrefix(cleanPath, "/echo/") {
+		//fmt.Println(cleanPath)
+		if cleanPath == "/" {
+			return methods.DefaultPath(conn)
+		} else if strings.HasPrefix(cleanPath, "/echo/") {
 			return methods.EchoPathStr(conn, cleanPath)
 		} else if strings.HasPrefix(cleanPath, "/user-agent") {
 			return methods.UserAgentHeader(conn, requeststr)
@@ -42,8 +46,6 @@ func handleConnection(conn net.Conn) {
 			break
 		}
 	}
-
-	defer conn.Close()
 }
 
 func main() {

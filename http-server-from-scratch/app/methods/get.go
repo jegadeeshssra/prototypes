@@ -5,12 +5,16 @@ import (
 	"net"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/server"
 )
 
 var dirPath string = "C:\\Users\\018046\\OneDrive - Sify Technologies Limited\\go\\prototypes\\codecrafters-http-server-go\\files\\"
+
+func DefaultPath(conn net.Conn) bool {
+	data := "HTTP/1.1 200 OK\r\n\r\n"
+	return server.WriteTCPResponse(conn, data)
+}
 
 func EchoPathStr(conn net.Conn, cleanPath string) bool {
 	str := strings.TrimPrefix(cleanPath, "/echo/")
@@ -23,7 +27,7 @@ func EchoPathStr(conn net.Conn, cleanPath string) bool {
 }
 
 func UserAgentHeader(conn net.Conn, requeststr string) bool {
-	time.Sleep(5 * time.Second)
+	// time.Sleep(5 * time.Second)
 	headerContent, err := server.GetUserAgent(requeststr)
 	if err != nil {
 		fmt.Println(err)
