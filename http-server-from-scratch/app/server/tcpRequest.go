@@ -22,7 +22,8 @@ type URL struct {
 }
 
 func (request HTTPReq) readUrlParams(method string, path string) Route {
-	for _, route := range routes {
+	var matchedRoute Route
+	for _, route := range Routes {
 
 		if route.Method != method {
 			continue
@@ -51,11 +52,12 @@ func (request HTTPReq) readUrlParams(method string, path string) Route {
 			Parameters: parameters,
 		}
 
-		return route
+		matchedRoute = route
 	}
+	return matchedRoute
 }
 
-func (request HTTPReq) ReadRequest(requeststr string) {
+func (request HTTPReq) ReadRequest(requeststr string) []byte {
 	reqSplit := strings.Split(requeststr, "\r\n\r\n")
 	lines := strings.Split(reqSplit[0], "\r\n")
 	parts := strings.Split(lines[0], " ")
@@ -84,8 +86,6 @@ func (request HTTPReq) ReadRequest(requeststr string) {
 	request.Method = method
 
 	route := request.readUrlParams(method, path)
-
-	route.Function(request).Write(request)
-
-	return
+	response := route.Function(request).Write(request)
+	return response
 }

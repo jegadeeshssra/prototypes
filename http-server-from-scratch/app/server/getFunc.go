@@ -1,31 +1,74 @@
-// package server
+package server
 
-// // Endpoint - "/"
-// func DefaultPath(request HTTPReq) HTTPResponse {
-// 	return HTTPResponse{
-// 		StatusCode: StatusOK,
-// 	}
-// }
+import (
+	"fmt"
+	"os"
+)
 
-// // Endpoint - "/echo/{str}"
-// func Echo(request HTTPReq) HTTPResponse {
-// 	content := request.Url.Parameters["str"]
+// Endpoint - "/"
+func DefaultPath(request HTTPReq) HTTPResponse {
+	return HTTPResponse{
+		StatusCode: StatusOK,
+	}
+}
 
-// 	return HTTPResponse{
-// 		StatusCode: StatusOK,
-// 		Headers:    map[string]string{"Content-Type": "text/plain"},
-// 		Body:       []byte(content),
-// 	}
-// }
+// Endpoint - "/echo/{str}"
+func Echo(request HTTPReq) HTTPResponse {
+	content := request.Url.Parameters["str"]
 
-// func UserAgentHeader(conn net.Conn, requeststr string) bool {
-// 	// time.Sleep(5 * time.Second)
-// 	headerContent, err := server.GetUserAgent(requeststr)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		data := "HTTP/1.1 404 Header string Not Found\r\n\r\n"
-// 		return server.WritePersistentTCPResponse(conn, data)
-// 	}
-// 	data := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(headerContent), headerContent)
-// 	return server.WritePersistentTCPResponse(conn, data)
-// }
+	return HTTPResponse{
+		StatusCode: StatusOK,
+		Headers:    map[string]string{"Content-Type": "text/plain"},
+		Body:       []byte(content),
+	}
+}
+
+func UserAgentHeader(request HTTPReq) HTTPResponse {
+	content := request.Headers["User-Agent"]
+	return HTTPResponse{
+		StatusCode: StatusOK,
+		Headers:    map[string]string{"Content-Type": "text/plain"},
+		Body:       []byte(content),
+	}
+}
+
+var dirPath string = "C:\\Users\\018046\\OneDrive - Sify Technologies Limited\\go\\prototypes\\codecrafters-http-server-go\\files\\"
+
+func FileExists(fullPath string) bool {
+	_, err := os.Stat(fullPath)
+	if err == nil {
+		return true
+	}
+	// checks if the error specifically means "file does not exist"
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
+
+func RetrieveFiles(request HTTPReq) HTTPResponse {
+
+	filename := request.Url.Parameters["filename"]
+	fullPath := fmt.Sprintf("%s%s", dirPath, filename)
+	//fmt.Println(fullPath)
+	// checks if the filename is mentioned && checks the file in the system
+	if !FileExists(fullPath) {
+		return HTTPResponse{
+			StatusCode: StatusNotFound,
+		}
+	} else {
+		b_contents, err := os.ReadFile(fullPath)
+		if err != nil {
+			fmt.Println("Error reading the file - ", err)
+			return HTTPResponse{
+				StatusCode: StatusNotFound,
+			}
+		}
+		content := string(b_contents)
+		return HTTPResponse{
+			StatusCode: StatusOK,
+			Headers:    map[string]string{"Content-Type": "text/plain"},
+			Body:       []byte(content),
+		}
+	}
+}
