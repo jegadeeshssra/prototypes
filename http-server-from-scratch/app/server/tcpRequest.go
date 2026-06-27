@@ -10,12 +10,52 @@ import (
 
 type HTTPReq struct {
 	Headers map[string]string
-	URL     string
+	Url     URL
 	Method  string
 	Body    []byte
 }
 
-func ReadRequest(requeststr string) HTTPReq {
+type URL struct {
+	Original    string
+	Parameters  map[string]string
+	QueryParams map[string]string
+}
+
+func (request HTTPReq) readUrlParams(method string, path string) Route {
+	for _, route := range routes {
+
+		if route.Method != method {
+			continue
+		}
+
+		uriParts := strings.Split(path, "/")
+		routePathParts := strings.Split(route.Path, "/")
+
+		if len(uriParts) != len(routePathParts) {
+			continue
+		}
+
+		parameters := make(map[string]string)
+		for i, part := range routePathParts {
+			if strings.HasPrefix(routePathParts[i], "{") && strings.HasSuffix(routePathParts[i], "}") {
+				parameters[part[1:len(part)-1]] = uriParts[i]
+				continue
+			}
+			if len(uriParts[i]) == len(part) {
+				continue
+			}
+		}
+
+		request.Url = URL{
+			Original:   path,
+			Parameters: parameters,
+		}
+
+		return route
+	}
+}
+
+func (request HTTPReq) ReadRequest(requeststr string) {
 	reqSplit := strings.Split(requeststr, "\r\n\r\n")
 	lines := strings.Split(reqSplit[0], "\r\n")
 	parts := strings.Split(lines[0], " ")
@@ -38,12 +78,14 @@ func ReadRequest(requeststr string) HTTPReq {
 		contentLength = 0
 	}
 
-	request := HTTPReq{
-		Headers: headers,
-		URL:     path,
-		Method:  method,
-		Body:    []byte(reqSplit[1][:contentLength]),
-	}
+	// Filling in the request struct
+	request.Headers = headers
+	request.Body = []byte(reqSplit[1][:contentLength])
+	request.Method = method
 
-	return request
+	route := request.readUrlParams(method, path)
+
+	route.Function(request).Write(request)
+
+	return
 }

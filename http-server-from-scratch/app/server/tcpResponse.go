@@ -30,6 +30,7 @@ type HTTPResponse struct {
 	Headers    map[string]string
 	StatusCode int
 	Body       []byte
+	Request    *HTTPReq
 }
 
 const (

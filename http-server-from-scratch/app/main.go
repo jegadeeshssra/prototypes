@@ -67,3 +67,16 @@ func main() {
 		go handleConnection(conn)
 	}
 }
+
+routes := make([]Route,0)
+routes = append(routes,
+	Route{
+		Fucntion: methods.DefaultPath,
+		Method: "GET",
+		Path: "/"
+	}),
+	Route{
+		Fucntion: methods.Ec,
+		Method: "GET",
+		Path: "/"
+	}
