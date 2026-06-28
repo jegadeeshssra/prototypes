@@ -21,9 +21,12 @@ type URL struct {
 	QueryParams map[string]string
 }
 
-func (request HTTPReq) readUrlParams(method string, path string) Route {
-	var matchedRoute Route
-	for _, route := range Routes {
+func (request HTTPReq) readUrlParams(method string, path string, routes *[]Route) func(HTTPReq) HTTPResponse {
+	var matchRouteFunc func(HTTPReq) HTTPResponse
+	matchRouteFunc = nil
+
+ROUTELOOP:
+	for _, route := range *routes {
 
 		if route.Method != method {
 			continue
@@ -36,7 +39,7 @@ func (request HTTPReq) readUrlParams(method string, path string) Route {
 			continue
 		}
 
-		parameters := make(map[string]string)
+		parameters := make(map[string]string, 0)
 		for i, part := range routePathParts {
 			if strings.HasPrefix(routePathParts[i], "{") && strings.HasSuffix(routePathParts[i], "}") {
 				parameters[part[1:len(part)-1]] = uriParts[i]
@@ -45,6 +48,7 @@ func (request HTTPReq) readUrlParams(method string, path string) Route {
 			if len(uriParts[i]) == len(part) {
 				continue
 			}
+			continue ROUTELOOP
 		}
 
 		request.Url = URL{
@@ -52,12 +56,12 @@ func (request HTTPReq) readUrlParams(method string, path string) Route {
 			Parameters: parameters,
 		}
 
-		matchedRoute = route
+		matchRouteFunc = route.Function
 	}
-	return matchedRoute
+	return matchRouteFunc
 }
 
-func (request HTTPReq) ReadRequest(requeststr string) []byte {
+func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route) []byte {
 	reqSplit := strings.Split(requeststr, "\r\n\r\n")
 	lines := strings.Split(reqSplit[0], "\r\n")
 	parts := strings.Split(lines[0], " ")
@@ -85,7 +89,13 @@ func (request HTTPReq) ReadRequest(requeststr string) []byte {
 	request.Body = []byte(reqSplit[1][:contentLength])
 	request.Method = method
 
-	route := request.readUrlParams(method, path)
-	response := route.Function(request).Write(request)
+	matchedRouteFunc := request.readUrlParams(method, path, routes)
+	if matchedRouteFunc == nil {
+		errRes := HTTPResponse{
+			StatusCode: StatusNotFound,
+		}
+		return errRes.Write(request)
+	}
+	response := matchedRouteFunc(request).Write(request)
 	return response
 }

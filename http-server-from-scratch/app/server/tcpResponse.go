@@ -15,17 +15,6 @@ import (
 // 	return true
 // }
 
-// func WriteTCPResponse(conn net.Conn, data string) bool {
-// 	defer conn.Close()
-// 	_, err := conn.Write([]byte(data))
-// 	if err != nil {
-// 		fmt.Println("Error Writing data to the accepted connection ", err.Error())
-// 		return false
-// 	}
-// 	fmt.Println("\n----------------------")
-// 	return true
-// }
-
 type HTTPResponse struct {
 	Headers    map[string]string
 	StatusCode int

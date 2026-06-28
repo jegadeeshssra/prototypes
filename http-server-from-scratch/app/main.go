@@ -1,74 +1,18 @@
 package main
 
 import (
-	"fmt"
-	"net"
-	"os"
-
 	"github.com/codecrafters-io/http-server-starter-go/app/server"
 )
 
-// func router(conn net.Conn, requeststr string) bool {
-// 	lines := strings.Split(requeststr, "\r\n")
-// 	parts := strings.Split(lines[0], " ")
-// 	method := strings.TrimSpace(parts[0])
-// 	path := server.GetURLPath(requeststr)
-// 	//fmt.Println(requeststr)
-// 	if method == "GET" {
-// 		cleanPath := strings.TrimSpace(path)
-// 		//fmt.Println(cleanPath)
-// 		if cleanPath == "/" {
-// 			return methods.DefaultPath(conn)
-// 		} else if strings.HasPrefix(cleanPath, "/echo/") {
-// 			return methods.EchoPathStr(conn, cleanPath)
-// 		} else if strings.HasPrefix(cleanPath, "/user-agent") {
-// 			return methods.UserAgentHeader(conn, requeststr)
-// 		} else if connHead, _ := server.ConnectionHeader(requeststr); connHead == "close" {
-// 			return server.ClosePersistentConnection(conn)
-// 		}
-// 	}
-// 	data := "HTTP/1.1 404 Not Found\r\n\r\n"
-// 	return server.WritePersistentTCPResponse(conn, data)
-// }
-
-func handleConnection(conn net.Conn) {
-	buf := make([]byte, 1024) // makes a byte array of 1024 bytes
-
-	for {
-		bufLen, _ := conn.Read(buf)
-		if bufLen > 0 {
-			requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
-			req := server.HTTPReq{}
-			req.ReadRequest(requeststr)
-		}
-		if bufLen <= 0 {
-			break
-		}
-	}
-}
-
 func main() {
+	router := server.NewServer()
 
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
-	if err != nil {
-		fmt.Println("Failed to bind port 4221")
-		os.Exit(1)
-	}
-	fmt.Println("HTTP Server is listening on PORT : 4221")
-	defer l.Close()
+	router.AddRoute("/", server.DefaultPath, "GET")
+	router.AddRoute("/echo/{str}", server.Echo, "GET")
+	router.AddRoute("/user-agent", server.UserAgentHeader, "GET")
+	router.AddRoute("/files/{filename}", server.RetrieveFiles, "GET")
+	router.AddRoute("/files/{filename}", server.ReadWriteRequestBody, "POST")
 
-	server.AddRoute(&server.Routes, "/", server.DefaultPath, "GET")
-	server.AddRoute(&server.Routes, "/echo/{str}", server.Echo, "GET")
-	server.AddRoute(&server.Routes, "/user-agent", server.UserAgentHeader, "GET")
-	server.AddRoute(&server.Routes, "/files/{filename}", server.RetrieveFiles, "GET")
-	server.AddRoute(&server.Routes, "/files/{filename}", server.ReadWriteRequestBody, "POST")
+	router.Start()
 
-	for {
-		conn, err := l.Accept() // A net.Conn object representing the established TCP connection
-		if err != nil {
-			fmt.Println("Error accepting connection: ", err.Error())
-			continue
-		}
-		go handleConnection(conn)
-	}
 }
