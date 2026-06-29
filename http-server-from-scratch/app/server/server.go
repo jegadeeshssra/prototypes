@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 )
 
 type Route struct {
@@ -31,8 +32,10 @@ func (server Server) AddRoute(path string, function func(HTTPReq) HTTPResponse, 
 	})
 }
 
-func (Server Server) writeConnection(conn net.Conn, data []byte) {
-	defer conn.Close()
+func (server Server) writeConnection(conn net.Conn, data []byte, keepAlive bool) {
+	if keepAlive == false {
+		defer conn.Close()
+	}
 	_, err := conn.Write([]byte(data))
 	if err != nil {
 		fmt.Println("Error Writing data to the accepted connection ", err.Error())
@@ -41,16 +44,26 @@ func (Server Server) writeConnection(conn net.Conn, data []byte) {
 }
 
 func (server Server) handleConnection(conn net.Conn) {
+
+	// waits idle for 30ms expecting request data
+	conn.SetReadDeadline(time.Now().Add(1000 * time.Millisecond))
+
 	buf := make([]byte, 1024) // makes a byte array of 1024 bytes
 
 	for {
-		bufLen, _ := conn.Read(buf)
+		bufLen, err := conn.Read(buf)
+		if os.IsTimeout(err) {
+			conn.Close()
+			return
+		}
 		if bufLen > 0 {
 			requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
 			req := HTTPReq{}
-			res := req.ReadAndProcessRequest(requeststr, &server.Routes)
-			server.writeConnection(conn, res)
+			res, keepAlive := req.ReadAndProcessRequest(requeststr, &server.Routes)
+			conn.SetWriteDeadline(time.Now().Add(300 * time.Millisecond))
+			server.writeConnection(conn, res, keepAlive)
 		}
+
 		if bufLen <= 0 {
 			break
 		}

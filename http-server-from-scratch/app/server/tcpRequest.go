@@ -61,7 +61,7 @@ ROUTELOOP:
 	return matchRouteFunc
 }
 
-func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route) []byte {
+func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route) ([]byte, bool) {
 	reqSplit := strings.Split(requeststr, "\r\n\r\n")
 	lines := strings.Split(reqSplit[0], "\r\n")
 	parts := strings.Split(lines[0], " ")
@@ -89,13 +89,21 @@ func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route)
 	request.Body = []byte(reqSplit[1][:contentLength])
 	request.Method = method
 
+	var keepAlive bool
+	connection := request.Headers["Connection"]
+	if connection != "" && connection == "close" {
+		// client wants to close the connection after this request/response
+		keepAlive = false
+	}
+
 	matchedRouteFunc := request.readUrlParams(method, path, routes)
 	if matchedRouteFunc == nil {
 		errRes := HTTPResponse{
 			StatusCode: StatusNotFound,
 		}
-		return errRes.Write(request)
+		return errRes.Write(request), keepAlive
 	}
 	response := matchedRouteFunc(request).Write(request)
-	return response
+
+	return response, keepAlive
 }
