@@ -14,12 +14,14 @@ type Route struct {
 }
 
 type Server struct {
-	Routes []Route
+	Routes    []Route
+	Semaphore chan struct{}
 }
 
 func NewServer() Server {
 	return Server{
-		Routes: make([]Route, 0),
+		Routes:    make([]Route, 0),
+		Semaphore: make(chan struct{}, 1000),
 	}
 }
 
@@ -44,6 +46,8 @@ func (server Server) writeConnection(conn net.Conn, data []byte, keepAlive bool)
 }
 
 func (server Server) handleConnection(conn net.Conn) {
+
+	defer func() { <-server.Semaphore }()
 
 	// waits idle for 30ms expecting request data
 	conn.SetReadDeadline(time.Now().Add(1000 * time.Millisecond))
@@ -85,6 +89,14 @@ func (server Server) Start() {
 			fmt.Println("Error accepting connection: ", err.Error())
 			continue
 		}
-		go server.handleConnection(conn)
+
+		select {
+		//acquire a slot , blocks if it is full
+		case server.Semaphore <- struct{}{}:
+			go server.handleConnection(conn)
+		default:
+			conn.Write([]byte("HTTP/1.1 503 Service Unavailable\r\nContent-Length: 15\r\n\r\nserver too busy\n"))
+			conn.Close()
+		}
 	}
 }
