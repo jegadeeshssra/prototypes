@@ -13,16 +13,24 @@ type Route struct {
 	Path     string
 }
 
+type handler func(request HTTPReq) HTTPResponse
+
 type Server struct {
-	Routes    []Route
-	Semaphore chan struct{}
+	Routes      []Route
+	Middlewares []func(handler) handler
+	Semaphore   chan struct{}
 }
 
 func NewServer() Server {
 	return Server{
-		Routes:    make([]Route, 0),
-		Semaphore: make(chan struct{}, 1000),
+		Routes:      make([]Route, 0),
+		Middlewares: make([]func(handler) handler, 0),
+		Semaphore:   make(chan struct{}, 1000),
 	}
+}
+
+func (server Server) Use(middleware func(handler) handler) {
+	server.Middlewares = append(server.Middlewares, middleware)
 }
 
 // This will take the routes array and append the new route within same loc of routes array.
@@ -63,9 +71,17 @@ func (server Server) handleConnection(conn net.Conn) {
 		if bufLen > 0 {
 			requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
 			req := HTTPReq{}
-			res, keepAlive := req.ReadAndProcessRequest(requeststr, &server.Routes)
+			reqFunc, keepAlive := req.ReadAndProcessRequest(requeststr, &server.Routes)
+
+			// reqFunction goes through
+			for i := len(server.Middlewares) - 1; i > 0; i-- {
+				reqFunc = server.Middlewares[i](reqFunc)
+			}
+
+			resDataBytes := reqFunc(req).Write(req)
+
 			conn.SetWriteDeadline(time.Now().Add(300 * time.Millisecond))
-			server.writeConnection(conn, res, keepAlive)
+			server.writeConnection(conn, resDataBytes, keepAlive)
 		}
 
 		if bufLen <= 0 {
@@ -93,6 +109,7 @@ func (server Server) Start() {
 		select {
 		//acquire a slot , blocks if it is full
 		case server.Semaphore <- struct{}{}:
+
 			go server.handleConnection(conn)
 		default:
 			conn.Write([]byte("HTTP/1.1 503 Service Unavailable\r\nContent-Length: 15\r\n\r\nserver too busy\n"))

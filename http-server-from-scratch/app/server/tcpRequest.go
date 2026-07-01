@@ -61,7 +61,7 @@ ROUTELOOP:
 	return matchRouteFunc
 }
 
-func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route) ([]byte, bool) {
+func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route) (func(HTTPReq) HTTPResponse, bool) {
 	reqSplit := strings.Split(requeststr, "\r\n\r\n")
 	lines := strings.Split(reqSplit[0], "\r\n")
 	parts := strings.Split(lines[0], " ")
@@ -96,14 +96,12 @@ func (request HTTPReq) ReadAndProcessRequest(requeststr string, routes *[]Route)
 		keepAlive = false
 	}
 
+	// retrieve the route matched and fill in the parameters
 	matchedRouteFunc := request.readUrlParams(method, path, routes)
 	if matchedRouteFunc == nil {
-		errRes := HTTPResponse{
-			StatusCode: StatusNotFound,
-		}
-		return errRes.Write(request), keepAlive
+		keepAlive = false
+		return nil, keepAlive
 	}
-	response := matchedRouteFunc(request).Write(request)
 
-	return response, keepAlive
+	return matchedRouteFunc, keepAlive
 }
