@@ -13,6 +13,8 @@ func main() {
 	router.AddRoute("/files/{filename}", server.RetrieveFiles, "GET")
 	router.AddRoute("/files/{filename}", server.ReadWriteRequestBody, "POST")
 
-	router.Start()
+	router.Use(server.TimingMiddleware)
+	router.Use(server.LoggingMiddleware)
 
+	router.Start()
 }
