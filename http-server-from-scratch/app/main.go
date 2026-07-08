@@ -1,17 +1,18 @@
 package main
 
 import (
-	"github.com/codecrafters-io/http-server-starter-go/app/server"
+	server "github.com/codecrafters-io/http-server-starter-go/app/server"
+	service "github.com/codecrafters-io/http-server-starter-go/app/service"
 )
 
 func main() {
 	router := server.NewServer()
 
-	router.AddRoute("/", server.DefaultPath, "GET")
-	router.AddRoute("/echo/{str}", server.Echo, "GET")
-	router.AddRoute("/user-agent", server.UserAgentHeader, "GET")
-	router.AddRoute("/files/{filename}", server.RetrieveFiles, "GET")
-	router.AddRoute("/files/{filename}", server.ReadWriteRequestBody, "POST")
+	router.AddRoute("/", service.DefaultPath, "GET")
+	router.AddRoute("/echo/{str}", service.Echo, "GET")
+	router.AddRoute("/user-agent", service.UserAgentHeader, "GET")
+	router.AddRoute("/files/{filename}", service.RetrieveFiles, "GET")
+	router.AddRoute("/files/{filename}", service.ReadWriteRequestBody, "POST")
 
 	router.Use(server.TimingMiddleware)
 	router.Use(server.LoggingMiddleware)

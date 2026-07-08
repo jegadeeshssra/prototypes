@@ -21,6 +21,12 @@ type URL struct {
 	QueryParams map[string]string
 }
 
+type Route struct {
+	Function func(request HTTPReq) HTTPResponse
+	Method   string
+	Path     string
+}
+
 func (request HTTPReq) readUrlParams(method string, path string, routes *[]Route) func(HTTPReq) HTTPResponse {
 	var matchRouteFunc func(HTTPReq) HTTPResponse
 	matchRouteFunc = nil

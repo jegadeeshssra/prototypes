@@ -5,25 +5,21 @@ import (
 	"net"
 	"os"
 	"time"
+
+	http "github.com/codecrafters-io/http-server-starter-go/app/http"
 )
 
-type Route struct {
-	Function func(request HTTPReq) HTTPResponse
-	Method   string
-	Path     string
-}
-
-type handler func(request HTTPReq) HTTPResponse
+type handler func(request http.HTTPReq) http.HTTPResponse
 
 type Server struct {
-	Routes      []Route
+	Routes      []http.Route
 	Middlewares []func(handler) handler
 	Semaphore   chan struct{}
 }
 
 func NewServer() Server {
 	return Server{
-		Routes:      make([]Route, 0),
+		Routes:      make([]http.Route, 0),
 		Middlewares: make([]func(handler) handler, 0),
 		Semaphore:   make(chan struct{}, 1000),
 	}
@@ -34,8 +30,8 @@ func (server Server) Use(middleware func(handler) handler) {
 }
 
 // This will take the routes array and append the new route within same loc of routes array.
-func (server Server) AddRoute(path string, function func(HTTPReq) HTTPResponse, method string) {
-	server.Routes = append(server.Routes, Route{
+func (server Server) AddRoute(path string, function func(http.HTTPReq) http.HTTPResponse, method string) {
+	server.Routes = append(server.Routes, http.Route{
 		Function: function,
 		Path:     path,
 		Method:   method,
@@ -70,7 +66,7 @@ func (server Server) handleConnection(conn net.Conn) {
 		}
 		if bufLen > 0 {
 			requeststr := string(buf[:bufLen]) // converts the "bufLen" bytes that Read() actually filled
-			req := HTTPReq{}
+			req := http.HTTPReq{}
 			reqFunc, keepAlive := req.ReadAndProcessRequest(requeststr, &server.Routes)
 
 			// reqFunction goes through
