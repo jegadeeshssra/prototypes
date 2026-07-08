@@ -3,30 +3,32 @@ package server
 import (
 	"fmt"
 	"os"
+
+	http "github.com/codecrafters-io/http-server-starter-go/app/http"
 )
 
 // Endpoint - "/"
-func DefaultPath(request HTTPReq) HTTPResponse {
-	return HTTPResponse{
-		StatusCode: StatusOK,
+func DefaultPath(request http.HTTPReq) http.HTTPResponse {
+	return http.HTTPResponse{
+		StatusCode: http.StatusOK,
 	}
 }
 
 // Endpoint - "/echo/{str}"
-func Echo(request HTTPReq) HTTPResponse {
+func Echo(request http.HTTPReq) http.HTTPResponse {
 	content := request.Url.Parameters["str"]
 
-	return HTTPResponse{
-		StatusCode: StatusOK,
+	return http.HTTPResponse{
+		StatusCode: http.StatusOK,
 		Headers:    map[string]string{"Content-Type": "text/plain"},
 		Body:       []byte(content),
 	}
 }
 
-func UserAgentHeader(request HTTPReq) HTTPResponse {
+func UserAgentHeader(request http.HTTPReq) http.HTTPResponse {
 	content := request.Headers["User-Agent"]
-	return HTTPResponse{
-		StatusCode: StatusOK,
+	return http.HTTPResponse{
+		StatusCode: http.StatusOK,
 		Headers:    map[string]string{"Content-Type": "text/plain"},
 		Body:       []byte(content),
 	}
@@ -46,27 +48,27 @@ func FileExists(fullPath string) bool {
 	return false
 }
 
-func RetrieveFiles(request HTTPReq) HTTPResponse {
+func RetrieveFiles(request http.HTTPReq) http.HTTPResponse {
 
 	filename := request.Url.Parameters["filename"]
 	fullPath := fmt.Sprintf("%s%s", dirPath, filename)
 	//fmt.Println(fullPath)
 	// checks if the filename is mentioned && checks the file in the system
 	if !FileExists(fullPath) {
-		return HTTPResponse{
-			StatusCode: StatusNotFound,
+		return http.HTTPResponse{
+			StatusCode: http.StatusNotFound,
 		}
 	} else {
 		b_contents, err := os.ReadFile(fullPath)
 		if err != nil {
 			fmt.Println("Error reading the file - ", err)
-			return HTTPResponse{
-				StatusCode: StatusNotFound,
+			return http.HTTPResponse{
+				StatusCode: http.StatusNotFound,
 			}
 		}
 		content := string(b_contents)
-		return HTTPResponse{
-			StatusCode: StatusOK,
+		return http.HTTPResponse{
+			StatusCode: http.StatusOK,
 			Headers:    map[string]string{"Content-Type": "text/plain"},
 			Body:       []byte(content),
 		}
